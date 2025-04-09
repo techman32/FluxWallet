@@ -1,8 +1,34 @@
-import { ScrollView, Text, View, StyleSheet, TouchableOpacity } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ScrollView, Text, View, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { ArrowDown, ArrowUp, QrCode, Search, User } from 'lucide-react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useWallet } from '../context/WalletContext'
+import * as SecureStore from 'expo-secure-store'
+import { useRouter } from 'expo-router'
 
-export default function Index() {
+export default function Home() {
+  const { publicKey, clearWallet } = useWallet()
+  const router = useRouter()
+
+  const formatAddress = (address: string | null) => {
+    if (!address) return ''
+    return `${address.slice(0, 5)}...${address.slice(-4)}`
+  }
+
+  const handleDeleteWallet = async () => {
+    Alert.alert('Удалить кошелек?', 'Вы уверены, что хотите удалить кошелек?', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: async () => {
+          await SecureStore.deleteItemAsync('secretKey')
+          clearWallet()
+          router.replace('/')
+        },
+      },
+    ])
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -10,7 +36,7 @@ export default function Index() {
           <TouchableOpacity>
             <User size={24} color="#000000" style={styles.userIcon} />
           </TouchableOpacity>
-          <Text>John Doe</Text>
+          <Text>{formatAddress(publicKey)}</Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconButton}>
@@ -37,19 +63,20 @@ export default function Index() {
             <Text style={styles.sendButtonText}>Отправить</Text>
           </TouchableOpacity>
         </View>
+
+        {/* 👇 Кнопка удаления кошелька */}
+        <TouchableOpacity onPress={handleDeleteWallet} style={styles.deleteButton}>
+          <Text style={styles.deleteButtonText}>Удалить кошелек</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: {
     backgroundColor: '#FFFFFF',
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
@@ -105,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 12,
-    columnGap: 12
+    columnGap: 12,
   },
   actionButton: {
     flex: 1,
@@ -127,10 +154,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 6,
   },
   sendButtonText: {
     color: '#000',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 6,
+  },
+  deleteButton: {
+    marginTop: 24,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#FF3B30',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 })
